@@ -1,0 +1,66 @@
+version: '3.7'
+services:
+  elastic1:
+    build:
+      # context: ./docker
+      dockerfile: ./dockerfile
+    container_name: elastic1
+    environment:
+      - node.name=elastic1
+      - discovery.seed_hosts=elastic2
+      # - discovery.type=single-node
+      - cluster.initial_master_nodes=elastic1,elastic2
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - esnet
+
+  elastic2:
+    build:
+      # context: ./docker
+      dockerfile: ./dockerfile
+    container_name: elastic2
+    environment:
+      - node.name=elastic2
+      - discovery.seed_hosts=elastic1
+      # - discovery.type=single-node
+      - cluster.initial_master_nodes=elastic1,elastic2
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data2:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:7.4.1
+    links:
+      - elastic1:elasticsearch
+    ports:
+      - 5601:5601
+    networks:
+      - esnet
+
+volumes:
+  data1:
+    driver: local
+  data2:
+    driver: local
+
+networks:
+  esnet:
